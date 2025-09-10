@@ -24,15 +24,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       try {
-        const res = await fetch('/api/admin/orders', {
-          method: 'GET',
-          credentials: 'include',
-        })
-        if (res.status === 200) {
-          setIsAuthenticated(true)
-        } else {
-          setIsAuthenticated(false)
-        }
+  // Use axios instance to respect baseURL and credentials in prod (Netlify)
+  // Keep it lightweight with small page/limit
+        const { api } = await import('@/api/axios')
+        await api.get('/admin/orders', { params: { page: 1, limit: 1 } })
+        setIsAuthenticated(true)
       } catch {
         setIsAuthenticated(false)
       } finally {

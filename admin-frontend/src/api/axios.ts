@@ -1,7 +1,10 @@
 import axios from 'axios'
 
+const rawBase = (typeof window !== 'undefined' && (window as any).__API_BASE__) || import.meta.env.VITE_API_BASE_URL || '/api'
+const baseURL = String(rawBase).replace(/\/$/, '') // strip trailing slash
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL,
   withCredentials: true,
 })
 

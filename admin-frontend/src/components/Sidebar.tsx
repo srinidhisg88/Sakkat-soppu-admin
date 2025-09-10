@@ -1,0 +1,26 @@
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
+
+const linkClasses = ({ isActive }: { isActive: boolean }) =>
+  `block px-4 py-2 rounded hover:bg-gray-200 ${isActive ? 'bg-gray-200 font-medium' : ''}`
+
+export default function Sidebar() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  const doLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
+  return (
+    <aside className="w-64 bg-white border-r h-screen sticky top-0 p-4 space-y-4">
+      <div className="text-xl font-bold">Sakkat Soppu Admin</div>
+      <nav className="space-y-1">
+        <NavLink to="/dashboard" className={linkClasses}>Dashboard</NavLink>
+        <NavLink to="/orders" className={linkClasses}>Orders</NavLink>
+        <NavLink to="/products" className={linkClasses}>Products</NavLink>
+        <NavLink to="/farmers" className={linkClasses}>Farmers</NavLink>
+      </nav>
+      <button onClick={doLogout} className="mt-8 w-full px-4 py-2 border rounded hover:bg-gray-100">Logout</button>
+    </aside>
+  )
+}

@@ -53,18 +53,34 @@ export default function OrderDrawer({ order, open, onClose }: { order?: Order; o
               <div className="text-sm text-gray-500 mb-1">Items</div>
               <ul className="space-y-2">
                 {full.items.map((it, idx) => {
-                  const name = typeof it.productId === 'string' ? '[product]' : (it as any).productId?.name || '[product]'
+                  const title = (it as any).name || (typeof it.productId === 'string' ? '[product]' : (it as any).productId?.name || '[product]')
+                  const unit = (it as any).unitLabel ? ` ${(it as any).unitLabel}` : ''
+                  const lineTotal = (it.price || 0) * (it.quantity || 0)
                   return (
                     <li key={idx} className="flex justify-between">
-                      <span>{name} × {it.quantity}</span>
-                      <span>₹{(it.price * it.quantity).toFixed(2)}</span>
+                      <span>{title}{unit} × {it.quantity} @ Rs {it.price}</span>
+                      <span>₹{lineTotal.toFixed(2)}</span>
                     </li>
                   )
                 })}
               </ul>
-              <div className="mt-2 flex justify-between font-semibold">
-                <span>Total</span>
-                <span>₹{full.totalPrice.toFixed(2)}</span>
+              <div className="mt-3 space-y-1">
+                {(full as any).subtotalPrice != null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span>₹{Number((full as any).subtotalPrice).toFixed(2)}</span>
+                  </div>
+                )}
+                {(full as any).discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-700">
+                    <span>Discount{(full as any).couponCode ? ` (${(full as any).couponCode})` : ''}</span>
+                    <span>-₹{Number((full as any).discountAmount).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>₹{full.totalPrice.toFixed(2)}</span>
+                </div>
               </div>
             </div>
 

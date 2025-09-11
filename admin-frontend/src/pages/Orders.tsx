@@ -68,7 +68,11 @@ export default function Orders() {
             const rows = orders.map((o) => {
               const user = typeof o.userId === 'string' ? '' : (o as any).userId?.name || o.userId?.email || ''
               const items = o.items
-                .map((it) => (typeof it.productId === 'string' ? '[product]' : (it as any).productId?.name || '[product]') + ` x${it.quantity}`)
+                .map((it) => {
+                  const title = it.name || (typeof it.productId === 'string' ? '[product]' : (it as any).productId?.name || '[product]')
+                  const unit = it.unitLabel ? ` (${it.unitLabel})` : ''
+                  return `${title}${unit} x${it.quantity} @ ${it.price}`
+                })
                 .join(' | ')
               return [user, items, o.totalPrice, o.status, dayjs(o.createdAt).format('YYYY-MM-DD HH:mm')]
             })
@@ -129,12 +133,11 @@ export default function Orders() {
                 <TD>
                   <ul className="list-disc list-inside">
                     {o.items.map((it, idx) => {
-                      const prodLabel = typeof it.productId === 'string'
-                        ? '[product]'
-                        : (it as any).productId?.name || '[product]'
+                      const title = it.name || (typeof it.productId === 'string' ? '[product]' : (it as any).productId?.name || '[product]')
+                      const unit = it.unitLabel ? ` ${it.unitLabel}` : ''
                       return (
                         <li key={idx}>
-                          {prodLabel} × {it.quantity} @ {it.price}
+                          {title}{unit} × {it.quantity} @ Rs {it.price}
                         </li>
                       )
                     })}

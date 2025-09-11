@@ -20,6 +20,7 @@ export default function Sidebar() {
       </div>
       <nav className="space-y-1">
         <NavLink to="/dashboard" className={linkClasses}>Dashboard</NavLink>
+  <NavLink to="/categories" className={linkClasses}>Categories</NavLink>
         <NavLink to="/orders" className={linkClasses}>Orders</NavLink>
         <NavLink to="/products" className={linkClasses}>Products</NavLink>
         <NavLink to="/farmers" className={linkClasses}>Farmers</NavLink>

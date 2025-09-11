@@ -17,15 +17,12 @@ export default function Products() {
   const [showLow, setShowLow] = useState(false)
   const [viewMediaOf, setViewMediaOf] = useState<Product | null>(null)
   const LOW_STOCK_THRESHOLD = 10
-  const filtered = useMemo(
-    () => (showLow ? products.filter((p) => (p as any).stock <= LOW_STOCK_THRESHOLD) : products),
-    [products, showLow]
-  )
+  const filtered = products
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getProducts()
+      const res = await getProducts(showLow ? { lowStock: true, threshold: LOW_STOCK_THRESHOLD } : undefined)
       setProducts(res.data)
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load products')
@@ -35,6 +32,7 @@ export default function Products() {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [showLow])
 
   const onCreate = async (formData: FormData) => {
     setSubmitting(true)
@@ -145,7 +143,13 @@ export default function Products() {
                   </div>
                 </TD>
                 <TD>{p.stock}</TD>
-                <TD>₹{p.price.toFixed(2)}</TD>
+                <TD>
+                  {p.priceForUnitLabel ? (
+                    <span>Rs {p.priceForUnitLabel}</span>
+                  ) : (
+                    <span>Rs {p.price.toFixed(2)}</span>
+                  )}
+                </TD>
                 <TD>
                   <div className="flex gap-2 justify-end">
                     <button className="px-2 py-1 border rounded hover:bg-gray-50" onClick={() => setEditProduct(p)}>Edit</button>
@@ -167,11 +171,13 @@ export default function Products() {
           <ProductForm
             initial={{
               name: editProduct.name,
-              category: editProduct.category,
+              categoryId: (editProduct as any).categoryId || '',
               price: editProduct.price,
               stock: editProduct.stock,
               description: editProduct.description,
               isOrganic: editProduct.isOrganic,
+              g: (editProduct as any).g,
+              pieces: (editProduct as any).pieces,
             }}
             onSubmit={onUpdate}
             submitting={submitting}

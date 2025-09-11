@@ -1,3 +1,4 @@
+import logoUrl from '@/assets/logo'
 import { Outlet } from 'react-router-dom'
 import { useState } from 'react'
 import Sidebar from '@/components/Sidebar'
@@ -9,7 +10,7 @@ export default function Layout() {
       {/* Mobile header */}
       <div className="md:hidden fixed inset-x-0 top-0 z-40 bg-white border-b h-12 flex items-center px-4">
         <button aria-label="Open menu" className="mr-3" onClick={() => setOpen(true)}>☰</button>
-  <img src="/logo.jpeg" alt="Logo" className="w-8 h-8 rounded mr-2 object-contain" />
+  <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded mr-2 object-contain" />
         <div className="font-semibold">Sakkat Soppu Admin</div>
       </div>
       {/* Sidebar */}

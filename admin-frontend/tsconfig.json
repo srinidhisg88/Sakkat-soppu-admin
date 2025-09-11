@@ -19,7 +19,8 @@
       "@/api/*": ["src/api/*"],
       "@/context/*": ["src/context/*"],
       "@/hooks/*": ["src/hooks/*"],
-      "@/utils/*": ["src/utils/*"]
+  "@/utils/*": ["src/utils/*"],
+  "@/assets/*": ["src/assets/*"]
     }
   },
   "include": ["src"],

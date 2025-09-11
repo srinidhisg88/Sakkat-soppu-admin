@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import logoUrl from '@/assets/logo'
 
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
   `block px-4 py-2 rounded hover:bg-gray-200 ${isActive ? 'bg-gray-200 font-medium' : ''}`
@@ -14,7 +15,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r h-full md:h-screen md:sticky md:top-0 p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <img src="/logo.jpeg" alt="Logo" className="w-10 h-10 rounded object-contain" />
+        <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded object-contain" />
         <div className="text-xl font-bold">Sakkat Soppu Admin</div>
       </div>
       <nav className="space-y-1">

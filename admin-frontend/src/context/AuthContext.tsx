@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { adminLogin, adminLogout } from '@/api/authApi'
+import api from '@/api/axios'
 
 type AuthContextType = {
   isAuthenticated: boolean
@@ -15,19 +16,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Skip network auth check when on public routes to avoid proxy errors before login.
     const check = async () => {
       const publicPaths = new Set(['/', '/login', '/forgot-password', '/reset-password', '/admin-signup'])
       const path = window.location.pathname
-      if (publicPaths.has(path)) {
-        setLoading(false)
-        return
-      }
+      if (publicPaths.has(path)) { setLoading(false); return }
       try {
-  // Use axios instance to respect baseURL and credentials in prod (Netlify)
-  // Keep it lightweight with small page/limit
-        const { api } = await import('@/api/axios')
-        await api.get('/admin/orders', { params: { page: 1, limit: 1 } })
+        // Prefer a lightweight auth check endpoint if available; fallback to a simple ping
+        // This call relies on cookies; ensure backend sets SameSite=None; Secure for Vercel.
+        await api.get('/auth/me').catch(async (err) => {
+          if (err?.response?.status === 404) {
+            // Fallback: call a cheap public endpoint that still requires auth implicitly
+            await api.get('/admin/orders', { params: { page: 1, limit: 1 } })
+          } else { throw err }
+        })
         setIsAuthenticated(true)
       } catch {
         setIsAuthenticated(false)

@@ -28,10 +28,8 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error?.response?.status === 401) {
-      // Let auth context handle logout; as a fallback, redirect.
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
+      // Avoid forcing a redirect; ProtectedRoute/AuthContext decide. Log for diagnosis.
+      if (import.meta.env.DEV) console.warn('[API] 401 Unauthorized on', error?.config?.url)
     }
     return Promise.reject(error)
   },

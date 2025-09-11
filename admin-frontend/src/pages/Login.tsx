@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
 import { baseURL } from '@/api/axios'
+import logoUrl from '@/assets/logo'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -40,7 +41,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="mb-4 text-center animate-fade-in">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full overflow-hidden shadow bg-white">
-            <img src="/logo.jpeg" alt="Logo" className="w-full h-full object-contain" />
+            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="mt-2 text-2xl font-extrabold tracking-tight">Sakkat Soppu</div>
           <div className="text-sm text-gray-500">Admin Login</div>

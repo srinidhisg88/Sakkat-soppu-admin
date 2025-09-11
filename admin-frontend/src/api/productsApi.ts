@@ -15,8 +15,19 @@ export type Product = {
 }
 
 export async function getProducts() {
-  const { data } = await api.get('/products')
-  return data as { data: Product[] }
+  const resp = await api.get('/products')
+  const d = resp.data
+  // Normalize to { data: Product[] } supporting common shapes
+  const list: Product[] = Array.isArray(d)
+    ? d
+    : Array.isArray(d?.data)
+    ? d.data
+    : Array.isArray(d?.products)
+    ? d.products
+    : Array.isArray(d?.items)
+    ? d.items
+    : []
+  return { data: list }
 }
 
 export type CreateProductInput = {
@@ -30,32 +41,38 @@ export type CreateProductInput = {
   videos?: File[]
 }
 
-export async function createProduct(input: CreateProductInput) {
-  const form = new FormData()
-  form.append('name', input.name)
-  if (input.category) form.append('category', input.category)
-  form.append('price', String(input.price))
-  form.append('stock', String(input.stock))
-  if (input.description) form.append('description', input.description)
-  if (typeof input.isOrganic === 'boolean') form.append('isOrganic', String(input.isOrganic))
-  input.images?.forEach((f) => form.append('images[]', f))
-  input.videos?.forEach((f) => form.append('videos[]', f))
+export async function createProduct(input: CreateProductInput | FormData) {
+  const form = input instanceof FormData ? input : (() => {
+    const f = new FormData()
+    f.append('name', input.name)
+    if (input.category) f.append('category', input.category)
+    f.append('price', String(input.price))
+    f.append('stock', String(input.stock))
+  if (input.description) f.append('description', input.description)
+  if (typeof input.isOrganic === 'boolean') f.append('isOrganic', String(input.isOrganic))
+  input.images?.forEach((file) => f.append('images', file))
+  input.videos?.forEach((file) => f.append('videos', file))
+    return f
+  })()
   const { data } = await api.post('/products', form, { headers: { 'Content-Type': 'multipart/form-data' } })
   return data as { success: boolean }
 }
 
-export type UpdateProductInput = Partial<CreateProductInput> & { id: string }
+export type UpdateProductInput = Partial<CreateProductInput>
 
-export async function updateProduct({ id, ...rest }: UpdateProductInput) {
-  const form = new FormData()
-  Object.entries(rest).forEach(([k, v]) => {
-    if (v === undefined || v === null) return
-    if (k === 'images' || k === 'videos') {
-      ;(v as File[]).forEach((f) => form.append(`${k}[]`, f))
-    } else {
-      form.append(k, typeof v === 'boolean' ? String(v) : String(v))
-    }
-  })
+export async function updateProduct(id: string, input: UpdateProductInput | FormData) {
+  const form = input instanceof FormData ? input : (() => {
+    const f = new FormData()
+    Object.entries(input).forEach(([k, v]) => {
+      if (v === undefined || v === null) return
+      if (k === 'images' || k === 'videos') {
+        ;(v as File[]).forEach((file) => f.append(k, file))
+      } else {
+        f.append(k, typeof v === 'boolean' ? String(v) : String(v))
+      }
+    })
+    return f
+  })()
   const { data } = await api.put(`/products/${id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
   return data as { success: boolean }
 }

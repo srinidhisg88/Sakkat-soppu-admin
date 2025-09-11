@@ -4,9 +4,23 @@ export type LoginPayload = { email: string; password: string }
 export type AdminUser = { _id: string; name: string; email: string; role: 'admin' }
 
 export async function adminLogin(payload: LoginPayload) {
-  // Backend may set httpOnly cookie and also return token+user; we accept both.
-  const { data } = await api.post('/admin/auth/login', payload)
-  return data as { token?: string; user?: AdminUser; message?: string }
+  // Try common admin login routes; accept whichever your backend exposes.
+  const candidates = ['/admin/auth/login', '/auth/admin/login', '/admin/login', '/auth/login']
+  let lastError: any
+  for (const path of candidates) {
+    try {
+      const { data } = await api.post(path, payload)
+      return data as { token?: string; user?: AdminUser; message?: string }
+    } catch (err: any) {
+      lastError = err
+      // Try next candidate only on 404/405/400; for 401 keep trying in case path mismatch
+      const status = err?.response?.status
+      if (![400, 401, 404, 405].includes(status)) {
+        break
+      }
+    }
+  }
+  throw lastError
 }
 
 export async function adminLogout() {
@@ -20,7 +34,10 @@ export async function adminLogout() {
 
 export type AdminSignupPayload = { name: string; email: string; password: string; signupCode: string }
 export async function adminSignup(payload: AdminSignupPayload) {
-  const { data } = await api.post('/admin/auth/signup', payload)
+  // Backend expects `adminCode` and disallows unknown keys; omit `signupCode` in the body
+  const { signupCode, ...rest } = payload
+  const body = { ...rest, adminCode: signupCode }
+  const { data } = await api.post('/auth/admin/signup', body)
   return data as { token: string; user: AdminUser }
 }
 

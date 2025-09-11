@@ -4,3 +4,39 @@
 
 /* App wide styles */
 html, body, #root { height: 100%; }
+
+/* Custom utilities for subtle entry animations and skeleton shimmer */
+@layer utilities {
+	/* Fade in */
+	@keyframes fade-in {
+		from { opacity: 0 }
+		to { opacity: 1 }
+	}
+	.animate-fade-in { animation: fade-in 180ms ease-out both; }
+
+	/* Scale + fade in (for modals/cards) */
+	@keyframes scale-in {
+		from { opacity: 0; transform: translateY(4px) scale(0.98) }
+		to { opacity: 1; transform: translateY(0) scale(1) }
+	}
+	.animate-scale-in { animation: scale-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+	/* Skeleton shimmer */
+	@keyframes shimmer {
+		0% { transform: translateX(-100%); }
+		100% { transform: translateX(100%); }
+	}
+	.skeleton {
+		position: relative;
+		overflow: hidden;
+		background-color: rgb(243 244 246); /* gray-100 */
+	}
+	.skeleton::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		transform: translateX(-100%);
+		background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.6) 50%, rgba(255,255,255,0) 100%);
+		animation: shimmer 1.4s infinite;
+	}
+}

@@ -3,8 +3,10 @@ import toast from 'react-hot-toast'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
 import Modal from '@/components/ui/Modal'
 import Loader from '@/components/ui/Loader'
+import Skeleton from '@/components/ui/Skeleton'
 import FarmerForm, { FarmerFormValues } from '@/components/forms/FarmerForm'
 import { getFarmers, createFarmer, updateFarmer, deleteFarmer, Farmer } from '@/api/farmersApi'
+import EmptyState from '@/components/ui/EmptyState'
 
 export default function Farmers() {
   const [farmers, setFarmers] = useState<Farmer[]>([])
@@ -71,11 +73,35 @@ export default function Farmers() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Farmers</h1>
-        <button onClick={() => setOpenAdd(true)} className="px-3 py-2 bg-green-600 text-white rounded">Add Farmer</button>
+        <button onClick={() => setOpenAdd(true)} className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 active:bg-green-800 transition-colors">Add Farmer</button>
       </div>
       {loading ? (
-        <div className="p-8 flex justify-center"><Loader /></div>
+        <div className="p-4">
+          <div className="bg-white border rounded shadow-sm p-4">
+            <div className="grid grid-cols-5 gap-4 mb-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} />
+              ))}
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-5 gap-4">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Skeleton key={j} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       ) : (
+        farmers.length === 0 ? (
+          <EmptyState
+            title="No farmers found"
+            message="Add a farmer to start managing suppliers."
+            action={<button onClick={() => setOpenAdd(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Farmer</button>}
+          />
+        ) : (
         <Table>
           <THead>
             <TR>
@@ -95,14 +121,14 @@ export default function Farmers() {
                 <TD>{f.phone}</TD>
                 <TD>
                   <div className="flex gap-2 justify-end">
-                    <button className="px-2 py-1 border rounded" onClick={() => setEditFarmer(f)}>Edit</button>
-                    <button className="px-2 py-1 border rounded text-red-600" onClick={() => onDelete(f)}>Delete</button>
+                    <button className="px-2 py-1 border rounded hover:bg-gray-50" onClick={() => setEditFarmer(f)}>Edit</button>
+                    <button className="px-2 py-1 border rounded text-red-600 hover:bg-red-50" onClick={() => onDelete(f)}>Delete</button>
                   </div>
                 </TD>
               </TR>
             ))}
           </TBody>
-        </Table>
+        </Table>)
       )}
 
       <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Farmer">

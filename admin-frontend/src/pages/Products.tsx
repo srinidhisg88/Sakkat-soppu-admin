@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
 import Modal from '@/components/ui/Modal'
-import ProductForm, { ProductFormValues } from '@/components/forms/ProductForm'
-import Loader from '@/components/ui/Loader'
+import MediaSlider from '@/components/ui/MediaSlider'
+import ProductForm from '@/components/forms/ProductForm'
+import Skeleton from '@/components/ui/Skeleton'
+import EmptyState from '@/components/ui/EmptyState'
 import { getProducts, createProduct, updateProduct, deleteProduct, Product } from '@/api/productsApi'
 
 export default function Products() {
@@ -12,6 +14,13 @@ export default function Products() {
   const [openAdd, setOpenAdd] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showLow, setShowLow] = useState(false)
+  const [viewMediaOf, setViewMediaOf] = useState<Product | null>(null)
+  const LOW_STOCK_THRESHOLD = 10
+  const filtered = useMemo(
+    () => (showLow ? products.filter((p) => (p as any).stock <= LOW_STOCK_THRESHOLD) : products),
+    [products, showLow]
+  )
 
   const load = async () => {
     setLoading(true)
@@ -27,10 +36,10 @@ export default function Products() {
 
   useEffect(() => { load() }, [])
 
-  const onCreate = async (values: ProductFormValues) => {
+  const onCreate = async (formData: FormData) => {
     setSubmitting(true)
     try {
-      await createProduct(values)
+    await createProduct(formData)
       toast.success('Product created')
       setOpenAdd(false)
       await load()
@@ -41,11 +50,11 @@ export default function Products() {
     }
   }
 
-  const onUpdate = async (values: ProductFormValues) => {
+  const onUpdate = async (formData: FormData) => {
     if (!editProduct) return
     setSubmitting(true)
     try {
-      await updateProduct({ id: editProduct._id, ...values })
+    await updateProduct(editProduct._id, formData)
       toast.success('Product updated')
       setEditProduct(null)
       await load()
@@ -71,38 +80,82 @@ export default function Products() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Products</h1>
-        <button onClick={() => setOpenAdd(true)} className="px-3 py-2 bg-green-600 text-white rounded">Add Product</button>
+        <div className="flex items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" className="rounded border-gray-300 text-green-600 focus:ring-green-500" checked={showLow} onChange={(e) => setShowLow(e.target.checked)} />
+            Show low stock (≤ {LOW_STOCK_THRESHOLD})
+          </label>
+          <button onClick={() => setOpenAdd(true)} className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 active:bg-green-800 transition-colors">Add Product</button>
+        </div>
       </div>
       {loading ? (
-        <div className="p-8 flex justify-center"><Loader /></div>
+        <div className="p-4">
+          <div className="bg-white border rounded shadow-sm p-4">
+            <div className="grid grid-cols-4 gap-4 mb-3">
+              <Skeleton className="col-span-1" />
+              <Skeleton className="col-span-1" />
+              <Skeleton className="col-span-1" />
+              <Skeleton className="col-span-1" />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-4 gap-4">
+                  <Skeleton />
+                  <Skeleton />
+                  <Skeleton />
+                  <Skeleton />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       ) : (
+        filtered.length === 0 ? (
+          <EmptyState
+            title="No products yet"
+            message="Create your first product to get started."
+            action={<button onClick={() => setOpenAdd(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Product</button>}
+          />
+        ) : (
         <Table>
           <THead>
             <TR>
-              <TH>ID</TH>
               <TH>Name</TH>
+              <TH>Media</TH>
               <TH>Stock</TH>
               <TH>Price</TH>
               <TH>&nbsp;</TH>
             </TR>
           </THead>
           <TBody>
-            {products.map((p) => (
+            {filtered.map((p) => (
               <TR key={p._id}>
-                <TD className="font-mono">{p._id}</TD>
                 <TD>{p.name}</TD>
+                <TD>
+                  <div className="flex items-center gap-2 justify-start">
+                    {p.images?.slice(0, 3).map((src, i) => (
+                      <img key={i} src={src} alt="img" className="w-10 h-10 rounded object-cover border" />
+                    ))}
+                    {p.videos?.slice(0, 1).map((src, i) => (
+                      <div key={i} className="w-10 h-10 rounded bg-black/70 text-white text-[10px] flex items-center justify-center">Video</div>
+                    ))}
+                    {(p.images?.length || 0) + (p.videos?.length || 0) > 0 && (
+                      <button className="px-2 py-1 text-xs border rounded hover:bg-gray-50" onClick={() => setViewMediaOf(p)}>View</button>
+                    )}
+                  </div>
+                </TD>
                 <TD>{p.stock}</TD>
                 <TD>₹{p.price.toFixed(2)}</TD>
                 <TD>
                   <div className="flex gap-2 justify-end">
-                    <button className="px-2 py-1 border rounded" onClick={() => setEditProduct(p)}>Edit</button>
-                    <button className="px-2 py-1 border rounded text-red-600" onClick={() => onDelete(p)}>Delete</button>
+                    <button className="px-2 py-1 border rounded hover:bg-gray-50" onClick={() => setEditProduct(p)}>Edit</button>
+                    <button className="px-2 py-1 border rounded text-red-600 hover:bg-red-50" onClick={() => onDelete(p)}>Delete</button>
                   </div>
                 </TD>
               </TR>
             ))}
           </TBody>
-        </Table>
+        </Table>)
       )}
 
       <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Product">
@@ -122,6 +175,17 @@ export default function Products() {
             }}
             onSubmit={onUpdate}
             submitting={submitting}
+          />
+        )}
+      </Modal>
+
+      <Modal open={!!viewMediaOf} onClose={() => setViewMediaOf(null)} title={viewMediaOf ? `Media: ${viewMediaOf.name}` : 'Media'}>
+        {viewMediaOf && (
+          <MediaSlider
+            items={[
+              ...(viewMediaOf.images || []).map((src) => ({ type: 'image' as const, src })),
+              ...(viewMediaOf.videos || []).map((src) => ({ type: 'video' as const, src })),
+            ]}
           />
         )}
       </Modal>

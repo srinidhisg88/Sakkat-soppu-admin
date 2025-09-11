@@ -3,10 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
   <title>Sakkat Soppu Admin</title>
   </head>
   <body class="bg-gray-50">
     <div id="root"></div>
+    <script>
+      // Runtime API base override: ensures deployed API is used if env var is missing
+      (function () {
+        if (!window.__API_BASE__) {
+          window.__API_BASE__ = 'https://sakkat-soppu-be-production.up.railway.app/api';
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
   </html>

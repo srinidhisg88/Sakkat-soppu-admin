@@ -8,6 +8,8 @@ import Dashboard from '@/pages/Dashboard'
 import Orders from '@/pages/Orders'
 import Products from '@/pages/Products'
 import Farmers from '@/pages/Farmers'
+import Coupons from '@/pages/Coupons'
+import AuditLogs from '@/pages/AuditLogs'
 import Layout from '@/components/Layout'
 import { AuthProvider } from '@/context/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/products" element={<Products />} />
           <Route path="/farmers" element={<Farmers />} />
+          <Route path="/coupons" element={<Coupons />} />
+          <Route path="/audit-logs" element={<AuditLogs />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

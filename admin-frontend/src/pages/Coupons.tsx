@@ -76,7 +76,7 @@ export default function Coupons() {
         <Table>
           <THead>
             <TR>
-              <TH>Code</TH><TH>Type</TH><TH>Value</TH><TH>Window</TH><TH>Active</TH><TH></TH>
+              <TH>Code</TH><TH>Type</TH><TH>Value</TH><TH>Min amount</TH><TH>Window</TH><TH>Active</TH><TH></TH>
             </TR>
           </THead>
           <TBody>
@@ -85,6 +85,7 @@ export default function Coupons() {
                 <TD className="font-medium">{c.code}</TD>
                 <TD>{c.type}</TD>
                 <TD>{c.type === 'percent' ? `${c.value}%` : `₹${c.value}`}</TD>
+                <TD>{c.minAmount !== undefined ? `₹${c.minAmount}` : '-'}</TD>
                 <TD className="text-sm text-gray-600">
                   {c.startAt ? new Date(c.startAt).toLocaleDateString() : '-'} → {c.endAt ? new Date(c.endAt).toLocaleDateString() : '-'}
                 </TD>

@@ -119,6 +119,7 @@ export default function Products() {
           <THead>
             <TR>
               <TH>Name</TH>
+              <TH>Category</TH>
               <TH>Media</TH>
               <TH>Stock</TH>
               <TH>Price</TH>
@@ -129,6 +130,7 @@ export default function Products() {
             {filtered.map((p) => (
               <TR key={p._id}>
                 <TD>{p.name}</TD>
+                <TD>{(p as any).category || '-'}</TD>
                 <TD>
                   <div className="flex items-center gap-2 justify-start">
                     {p.images?.slice(0, 3).map((src, i) => (

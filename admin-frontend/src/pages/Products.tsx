@@ -219,11 +219,11 @@ export default function Products() {
         )
       )}
 
-      <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Product">
+  <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Product" size="full">
         <ProductForm onSubmit={onCreate} submitting={submitting} />
       </Modal>
 
-      <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title="Edit Product">
+  <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title="Edit Product" size="full">
         {editProduct && (
           <ProductForm
             initial={{
@@ -236,6 +236,8 @@ export default function Products() {
               g: (editProduct as any).g,
               pieces: (editProduct as any).pieces,
             }}
+    initialExistingImages={editProduct.images || []}
+    initialExistingVideos={editProduct.videos || []}
             onSubmit={onUpdate}
             submitting={submitting}
           />

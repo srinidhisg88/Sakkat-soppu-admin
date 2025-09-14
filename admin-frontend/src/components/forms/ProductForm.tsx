@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getPublicCategories, type Category } from '@/api/categoriesApi'
 
 export type ProductFormValues = {
@@ -19,9 +19,12 @@ type Props = {
   initial?: Partial<ProductFormValues>;
   onSubmit: (formData: FormData) => void;
   submitting?: boolean;
+  // existing media for edit mode (URLs)
+  initialExistingImages?: string[];
+  initialExistingVideos?: string[];
 };
 
-export default function ProductForm({ initial, onSubmit, submitting }: Props) {
+export default function ProductForm({ initial, onSubmit, submitting, initialExistingImages = [], initialExistingVideos = [] }: Props) {
   const [categories, setCategories] = useState<Category[]>([])
   const [catLoading, setCatLoading] = useState(true)
   const [values, setValues] = useState<ProductFormValues>({
@@ -38,9 +41,19 @@ export default function ProductForm({ initial, onSubmit, submitting }: Props) {
   pieces: (initial as any)?.pieces || 0,
   });
 
+  // Existing media (URLs) and removal tracking (for edit mode)
+  const [existingImages, setExistingImages] = useState<string[]>(initialExistingImages)
+  const [existingVideos, setExistingVideos] = useState<string[]>(initialExistingVideos)
+  const [removedImages, setRemovedImages] = useState<Set<string>>(new Set())
+  const [removedVideos, setRemovedVideos] = useState<Set<string>>(new Set())
+
+  // File input refs for triggering via buttons
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const videoInputRef = useRef<HTMLInputElement | null>(null)
+
   useEffect(() => {
     let mounted = true
-  const fetchCats = async () => {
+    const fetchCats = async () => {
       try {
         const res = await getPublicCategories()
         if (mounted) setCategories(res.data)
@@ -49,17 +62,21 @@ export default function ProductForm({ initial, onSubmit, submitting }: Props) {
       } finally {
         if (mounted) setCatLoading(false)
       }
-  }
-  fetchCats()
-  const onUpdated = () => fetchCats()
-  window.addEventListener('categories:updated', onUpdated as EventListener)
-    return () => { mounted = false }
+    }
+    fetchCats()
+    const onUpdated = () => fetchCats()
+    window.addEventListener('categories:updated', onUpdated as EventListener)
+    return () => {
+      mounted = false
+      window.removeEventListener('categories:updated', onUpdated as EventListener)
+    }
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Require an image only when creating a new product (no initial)
+  const hasExisting = existingImages.filter((url) => !removedImages.has(url)).length > 0
     if (!initial && values.images.length === 0) {
       alert('At least one image is required');
       return;
@@ -88,11 +105,97 @@ export default function ProductForm({ initial, onSubmit, submitting }: Props) {
   // videos
   values.videos?.forEach((file) => formData.append('videos', file));
 
+    // For edit: include removal arrays for existing media
+    if (initial) {
+      removedImages.forEach((url) => formData.append('removeImages', url))
+      removedVideos.forEach((url) => formData.append('removeVideos', url))
+      // Include imagesOrder when reordering existing images; send only the ones kept
+      const keptExisting = existingImages.filter((u) => !removedImages.has(u))
+      if (keptExisting.length > 0) {
+        keptExisting.forEach((u) => formData.append('imagesOrder', u))
+      }
+      // Include videosOrder when reordering existing videos; send only kept
+      const keptExistingVideos = existingVideos.filter((u) => !removedVideos.has(u))
+      if (keptExistingVideos.length > 0) {
+        keptExistingVideos.forEach((u) => formData.append('videosOrder', u))
+      }
+    }
+
     onSubmit(formData);
   };
 
+  // Drag and drop helpers
+  const onDropImages = (files: FileList | File[]) => {
+    const picked = Array.from(files || [])
+      .filter((f) => f.type.startsWith('image/'))
+    if (picked.length === 0) return
+    setValues((v) => ({ ...v, images: [...v.images, ...picked] }))
+  }
+  const onDropVideos = (files: FileList | File[]) => {
+    const picked = Array.from(files || [])
+      .filter((f) => f.type.startsWith('video/'))
+    if (picked.length === 0) return
+    setValues((v) => ({ ...v, videos: [...(v.videos || []), ...picked] }))
+  }
+
+  const activeExistingImages = useMemo(() => existingImages.map((url) => ({ url, removed: removedImages.has(url) })), [existingImages, removedImages])
+  const activeExistingVideos = useMemo(() => existingVideos.map((url) => ({ url, removed: removedVideos.has(url) })), [existingVideos, removedVideos])
+
+  // Simple drag-and-drop reordering for existing images
+  const dragIndexRef = useRef<number | null>(null)
+  const onDragStart = (idx: number) => (e: React.DragEvent) => {
+    dragIndexRef.current = idx
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  const onDragOverReorder = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+  const onDropReorder = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    const from = dragIndexRef.current
+    if (from === null || from === idx) return
+    setExistingImages((arr) => {
+      const next = [...arr]
+      const [moved] = next.splice(from, 1)
+      next.splice(idx, 0, moved)
+      return next
+    })
+    dragIndexRef.current = null
+  }
+
+  // Reordering for existing videos
+  const videoDragIndexRef = useRef<number | null>(null)
+  const onVideoDragStart = (idx: number) => (e: React.DragEvent) => {
+    videoDragIndexRef.current = idx
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  const onVideoDragOverReorder = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+  const onVideoDropReorder = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    const from = videoDragIndexRef.current
+    if (from === null || from === idx) return
+    setExistingVideos((arr) => {
+      const next = [...arr]
+      const [moved] = next.splice(from, 1)
+      next.splice(idx, 0, moved)
+      return next
+    })
+    videoDragIndexRef.current = null
+  }
+
   return (
-  <form className="space-y-4" onSubmit={handleSubmit}>
+  <form className="space-y-6" onSubmit={handleSubmit}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-lg font-semibold">Product details</h4>
+          <p className="text-sm text-gray-500">Fill in basic info and media</p>
+        </div>
+      </div>
       <div>
         <label className="block text-sm mb-1">Name</label>
         <input
@@ -103,7 +206,7 @@ export default function ProductForm({ initial, onSubmit, submitting }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm mb-1">Category</label>
           <select
@@ -175,7 +278,7 @@ export default function ProductForm({ initial, onSubmit, submitting }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm mb-1">Unit type</label>
           <div className="flex items-center gap-3 text-sm">
@@ -215,43 +318,208 @@ export default function ProductForm({ initial, onSubmit, submitting }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+  {/* Media section */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Images */}
         <div>
-          <label className="block text-sm mb-1">Images</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium">Images</label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+        className="px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                Add images
+              </button>
+              <button
+                type="button"
+        className="px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
+                onClick={() => setValues((v) => ({ ...v, images: [] }))}
+                disabled={values.images.length === 0}
+              >
+                Clear new
+              </button>
+            </div>
+          </div>
           <input
+            ref={imageInputRef}
             type="file"
             multiple
-            accept="image/*"
-            onChange={(e) =>
-              setValues({
-                ...values,
-                images: Array.from(e.target.files || []),
-              })
-            }
-            required={!initial}
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => onDropImages(e.target.files || [])}
+            required={!initial && existingImages.filter((u) => !removedImages.has(u)).length === 0}
           />
+          <div
+            className="border-2 border-dashed rounded-md p-6 text-sm text-gray-600 hover:bg-gray-50"
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDropImages(e.dataTransfer.files) }}
+          >
+            Drag & drop images here, or use “Add images”
+          </div>
+          {/* Existing image previews */}
+          {existingImages.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs text-gray-600 mb-1">Existing</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {activeExistingImages.map(({ url, removed }, idx) => (
+                  <div
+                    key={url}
+                    className={`relative group border rounded overflow-hidden ${removed ? 'opacity-50 grayscale' : ''}`}
+                    draggable
+                    onDragStart={onDragStart(idx)}
+                    onDragOver={onDragOverReorder(idx)}
+                    onDrop={onDropReorder(idx)}
+                    title="Drag to reorder"
+                  >
+                    <img src={url} alt="img" className="w-full h-28 object-cover" />
+                    <div className="absolute top-1 left-1 bg-white/80 text-[10px] px-1 rounded shadow cursor-move">≡</div>
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 bg-white/80 hover:bg-white text-xs px-2 py-0.5 rounded shadow"
+                      onClick={() => {
+                        setRemovedImages((s) => {
+                          const next = new Set(s)
+                          if (next.has(url)) next.delete(url); else next.add(url)
+                          return next
+                        })
+                      }}
+                    >
+                      {removed ? 'Undo' : 'Remove'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* New image previews */}
+          {values.images.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs text-gray-600 mb-1">To upload</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {values.images.map((file, idx) => {
+                  const src = URL.createObjectURL(file)
+                  return (
+                    <div key={idx} className="relative group border rounded overflow-hidden">
+                      <img src={src} alt={file.name} className="w-full h-28 object-cover" onLoad={() => URL.revokeObjectURL(src)} />
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 bg-white/80 hover:bg-white text-xs px-2 py-0.5 rounded shadow"
+                        onClick={() => setValues((v) => ({ ...v, images: v.images.filter((_, i) => i !== idx) }))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Videos */}
         <div>
-          <label className="block text-sm mb-1">Videos</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium">Videos</label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
+                onClick={() => videoInputRef.current?.click()}
+              >
+                Add videos
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
+                onClick={() => setValues((v) => ({ ...v, videos: [] }))}
+                disabled={!values.videos || values.videos.length === 0}
+              >
+                Clear new
+              </button>
+            </div>
+          </div>
           <input
+            ref={videoInputRef}
             type="file"
             multiple
             accept="video/*"
-            onChange={(e) =>
-              setValues({
-                ...values,
-                videos: Array.from(e.target.files || []),
-              })
-            }
+            className="hidden"
+            onChange={(e) => onDropVideos(e.target.files || [])}
           />
+          <div
+            className="border-2 border-dashed rounded-md p-6 text-sm text-gray-600 hover:bg-gray-50"
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDropVideos(e.dataTransfer.files) }}
+          >
+            Drag & drop videos here, or use “Add videos”
+          </div>
+          {/* Existing video previews */}
+          {existingVideos.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs text-gray-600 mb-1">Existing</div>
+              <div className="grid grid-cols-2 gap-3">
+                {activeExistingVideos.map(({ url, removed }, idx) => (
+                  <div
+                    key={url}
+                    className={`relative group border rounded overflow-hidden ${removed ? 'opacity-50' : ''}`}
+                    draggable
+                    onDragStart={onVideoDragStart(idx)}
+                    onDragOver={onVideoDragOverReorder(idx)}
+                    onDrop={onVideoDropReorder(idx)}
+                    title="Drag to reorder"
+                  >
+                    <video src={url} className="w-full h-28 object-cover" controls preload="metadata" />
+                    <div className="absolute top-1 left-1 bg-white/80 text-[10px] px-1 rounded shadow cursor-move">≡</div>
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 bg-white/80 hover:bg-white text-xs px-2 py-0.5 rounded shadow"
+                      onClick={() => {
+                        setRemovedVideos((s) => {
+                          const next = new Set(s)
+                          if (next.has(url)) next.delete(url); else next.add(url)
+                          return next
+                        })
+                      }}
+                    >
+                      {removed ? 'Undo' : 'Remove'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* New video previews */}
+          {values.videos && values.videos.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs text-gray-600 mb-1">To upload</div>
+              <div className="grid grid-cols-2 gap-3">
+                {values.videos.map((file, idx) => {
+                  const src = URL.createObjectURL(file)
+                  return (
+                    <div key={idx} className="relative group border rounded overflow-hidden">
+                      <video src={src} className="w-full h-28 object-cover" controls preload="metadata" onLoadedData={() => URL.revokeObjectURL(src)} />
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 bg-white/80 hover:bg-white text-xs px-2 py-0.5 rounded shadow"
+                        onClick={() => setValues((v) => ({ ...v, videos: (v.videos || []).filter((_, i) => i !== idx) }))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
+  <div className="flex justify-end gap-2 pt-2">
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-60 hover:bg-green-700 active:bg-green-800 transition-colors"
+          className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 hover:bg-green-700 active:bg-green-800 transition-colors"
           disabled={submitting}
         >
           Save

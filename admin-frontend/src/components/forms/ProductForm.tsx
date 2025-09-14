@@ -75,11 +75,14 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Require an image only when creating a new product (no initial)
-  const hasExisting = existingImages.filter((url) => !removedImages.has(url)).length > 0
-    if (!initial && values.images.length === 0) {
-      alert('At least one image is required');
-      return;
+    // Require at least one media when creating (image or video). No native required on hidden inputs.
+    if (!initial) {
+      const hasNewImages = values.images.length > 0
+      const hasNewVideos = (values.videos?.length || 0) > 0
+      if (!hasNewImages && !hasNewVideos) {
+        alert('Please add at least one image or video.')
+        return
+      }
     }
 
     const formData = new FormData();
@@ -349,7 +352,6 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
             accept="image/jpeg,image/jpg,image/png,image/webp"
             className="hidden"
             onChange={(e) => onDropImages(e.target.files || [])}
-            required={!initial && existingImages.filter((u) => !removedImages.has(u)).length === 0}
           />
           <div
             className="border-2 border-dashed rounded-md p-6 text-sm text-gray-600 hover:bg-gray-50"

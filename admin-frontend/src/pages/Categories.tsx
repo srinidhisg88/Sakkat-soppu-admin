@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getAdminCategories, createCategory, updateCategory, deleteCategory, type Category } from '@/api/categoriesApi'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
+import Pagination from '@/components/ui/Pagination'
 import Modal from '@/components/ui/Modal'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -13,12 +14,16 @@ export default function Categories() {
   const [editing, setEditing] = useState<Category | null>(null)
   const [editName, setEditName] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [total, setTotal] = useState<number | undefined>(undefined)
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getAdminCategories({ page: 1, limit: 50, sort: 'name' })
+      const res = await getAdminCategories({ page, limit, sort: 'name' })
       setItems(res.data)
+      setTotal(res.total)
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load categories')
     } finally {
@@ -26,7 +31,7 @@ export default function Categories() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page, limit])
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,7 +108,8 @@ export default function Categories() {
       ) : items.length === 0 ? (
         <EmptyState title="No categories" message="Create your first category." action={<button onClick={() => setOpenAdd(true)} className="px-4 py-2 bg-green-600 text-white rounded">Add Category</button>} />
       ) : (
-        <Table>
+  <>
+  <Table>
           <THead>
             <TR>
               <TH>Name</TH>
@@ -125,7 +131,9 @@ export default function Categories() {
               </TR>
             ))}
           </TBody>
-        </Table>
+  </Table>
+  <Pagination page={page} limit={limit} total={total} onPageChange={(p) => setPage(Math.max(1, p))} />
+  </>
       )}
 
       <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Category">

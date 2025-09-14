@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
+import Pagination from '@/components/ui/Pagination'
 import Modal from '@/components/ui/Modal'
 import Loader from '@/components/ui/Loader'
 import Skeleton from '@/components/ui/Skeleton'
@@ -14,12 +15,16 @@ export default function Farmers() {
   const [openAdd, setOpenAdd] = useState(false)
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [total, setTotal] = useState<number | undefined>(undefined)
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getFarmers()
+      const res = await getFarmers({ page, limit })
       setFarmers(res.data)
+      setTotal(res.total)
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load farmers')
     } finally {
@@ -27,7 +32,7 @@ export default function Farmers() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page, limit])
 
   const onCreate = async (values: FarmerFormValues) => {
     setSubmitting(true)
@@ -102,7 +107,8 @@ export default function Farmers() {
             action={<button onClick={() => setOpenAdd(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Farmer</button>}
           />
         ) : (
-        <Table>
+  <>
+  <Table>
           <THead>
             <TR>
               <TH>ID</TH>
@@ -128,7 +134,9 @@ export default function Farmers() {
               </TR>
             ))}
           </TBody>
-        </Table>)
+  </Table>
+  <Pagination page={page} limit={limit} total={total} onPageChange={(p) => setPage(Math.max(1, p))} />
+  </>)
       )}
 
       <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Farmer">

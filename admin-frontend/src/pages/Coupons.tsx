@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Coupon, getCoupons, createCoupon, updateCoupon, deleteCoupon } from '@/api/couponsApi'
+import Pagination from '@/components/ui/Pagination'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
 import Modal from '@/components/ui/Modal'
 
 export default function Coupons() {
   const [list, setList] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [total, setTotal] = useState<number | undefined>(undefined)
+  const [totalPages, setTotalPages] = useState<number | undefined>(undefined)
   const [open, setOpen] = useState(false)
   const [edit, setEdit] = useState<Coupon | null>(null)
   const [form, setForm] = useState<Partial<Coupon>>({ type: 'percent', active: true })
@@ -14,13 +19,15 @@ export default function Coupons() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getCoupons()
+      const res = await getCoupons({ page, limit })
       setList(res.data)
+      setTotal(res.total)
+      setTotalPages(res.totalPages)
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to load coupons')
     } finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page, limit])
 
   const submit = async () => {
     // basic client-side validation to avoid backend 500s on invalid input
@@ -73,7 +80,8 @@ export default function Coupons() {
       {loading ? <div className="text-sm text-gray-500">Loading...</div> : list.length === 0 ? (
         <div className="bg-white border rounded p-6 text-center text-gray-600">No coupons yet</div>
       ) : (
-        <Table>
+  <>
+  <Table>
           <THead>
             <TR>
               <TH>Code</TH><TH>Type</TH><TH>Value</TH><TH>Min amount</TH><TH>Window</TH><TH>Active</TH><TH></TH>
@@ -99,10 +107,12 @@ export default function Coupons() {
               </TR>
             ))}
           </TBody>
-        </Table>
+  </Table>
+  <Pagination page={page} limit={limit} total={total} totalPages={totalPages} onPageChange={(p) => setPage(Math.max(1, p))} />
+  </>
       )}
 
-      <Modal open={open} onClose={() => { setOpen(false); setEdit(null) }} title={edit ? 'Edit coupon' : 'Add coupon'}>
+  <Modal open={open} onClose={() => { setOpen(false); setEdit(null) }} title={edit ? 'Edit coupon' : 'Add coupon'}>
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium mb-1">Code</label>

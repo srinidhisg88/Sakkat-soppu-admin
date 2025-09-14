@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
+import Pagination from '@/components/ui/Pagination'
 import Modal from '@/components/ui/Modal'
 import MediaSlider from '@/components/ui/MediaSlider'
 import ProductForm from '@/components/forms/ProductForm'
@@ -11,6 +12,10 @@ import { getProducts, createProduct, updateProduct, deleteProduct, Product } fro
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [total, setTotal] = useState<number | undefined>(undefined)
+  const [totalPages, setTotalPages] = useState<number | undefined>(undefined)
   const [openAdd, setOpenAdd] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -22,8 +27,14 @@ export default function Products() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getProducts(showLow ? { lowStock: true, threshold: LOW_STOCK_THRESHOLD } : undefined)
+      const res = await getProducts({
+        page,
+        limit,
+        ...(showLow ? { lowStock: true, threshold: LOW_STOCK_THRESHOLD } : {}),
+      })
       setProducts(res.data)
+      setTotal(res.total)
+      setTotalPages(res.totalPages)
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load products')
     } finally {
@@ -31,8 +42,7 @@ export default function Products() {
     }
   }
 
-  useEffect(() => { load() }, [])
-  useEffect(() => { load() }, [showLow])
+  useEffect(() => { load() }, [page, limit, showLow])
 
   const onCreate = async (formData: FormData) => {
     setSubmitting(true)
@@ -115,6 +125,7 @@ export default function Products() {
             action={<button onClick={() => setOpenAdd(true)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Product</button>}
           />
         ) : (
+        <>
         <Table>
           <THead>
             <TR>
@@ -161,7 +172,16 @@ export default function Products() {
               </TR>
             ))}
           </TBody>
-        </Table>)
+        </Table>
+        <Pagination
+          page={page}
+          limit={limit}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={(p) => setPage(Math.max(1, p))}
+        />
+        </>
+        )
       )}
 
       <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Product">

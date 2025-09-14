@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
 import { AuditLog, getAuditLogs } from '@/api/auditApi'
+import Pagination from '@/components/ui/Pagination'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
 
 export default function AuditLogs() {
   const [list, setList] = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [total, setTotal] = useState<number | undefined>(undefined)
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await getAuditLogs({ limit: 100 })
+      const res = await getAuditLogs({ page, limit })
       setList(res.data)
+      setTotal(res.total)
     } finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [page, limit])
 
   return (
     <div>
@@ -24,7 +29,8 @@ export default function AuditLogs() {
       {loading ? <div className="text-sm text-gray-500">Loading...</div> : list.length === 0 ? (
         <div className="bg-white border rounded p-6 text-center text-gray-600">No audit entries</div>
       ) : (
-        <Table>
+  <>
+  <Table>
           <THead>
             <TR>
               <TH>When</TH><TH>Actor</TH><TH>Action</TH><TH>Resource</TH><TH>IP</TH><TH></TH>
@@ -42,7 +48,9 @@ export default function AuditLogs() {
               </TR>
             ))}
           </TBody>
-        </Table>
+  </Table>
+  <Pagination page={page} limit={limit} total={total} onPageChange={(p) => setPage(Math.max(1, p))} />
+  </>
       )}
     </div>
   )

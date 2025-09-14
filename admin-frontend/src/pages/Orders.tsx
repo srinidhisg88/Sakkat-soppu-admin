@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import dayjs from 'dayjs'
 import { getOrders, updateOrderStatus, Order } from '@/api/ordersApi'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
+import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/StatusBadge'
 import Loader from '@/components/ui/Loader'
 import Skeleton from '@/components/ui/Skeleton'
@@ -19,12 +20,16 @@ export default function Orders() {
   const [filters, setFilters] = useState<OrderFiltersState>({})
   const [selected, setSelected] = useState<Order | undefined>(undefined)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [total, setTotal] = useState<number | undefined>(undefined)
 
   const fetchOrders = async (f?: OrderFiltersState) => {
     setLoading(true)
     try {
       const res = await getOrders({
-        limit: 100,
+        page,
+        limit,
         sort: '-createdAt',
         status: f?.status,
         userId: f?.userId,
@@ -32,6 +37,7 @@ export default function Orders() {
         to: f?.to,
       } as any)
       setOrders(res.data)
+      setTotal(res.total)
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load orders')
     } finally {
@@ -40,8 +46,8 @@ export default function Orders() {
   }
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    fetchOrders(filters)
+  }, [page, limit])
 
   const onChangeStatus = async (orderId: string, status: Order['status']) => {
     const prev = orders
@@ -85,8 +91,8 @@ export default function Orders() {
 
       <OrderFilters
         initial={filters}
-        onApply={(f) => { setFilters(f); fetchOrders(f) }}
-        onClear={() => { setFilters({}); fetchOrders({}) }}
+        onApply={(f) => { setFilters(f); setPage(1); fetchOrders(f) }}
+        onClear={() => { setFilters({}); setPage(1); fetchOrders({}) }}
       />
       {loading ? (
         <div className="p-4">
@@ -111,7 +117,8 @@ export default function Orders() {
         orders.length === 0 ? (
           <EmptyState title="No orders yet" message="Orders will appear here once customers place them." />
         ) : (
-        <Table>
+  <>
+  <Table>
           <THead>
             <TR>
               <TH>User</TH>
@@ -163,7 +170,9 @@ export default function Orders() {
               </TR>
             ))}
           </TBody>
-        </Table>
+  </Table>
+  <Pagination page={page} limit={limit} total={total} onPageChange={(p) => setPage(Math.max(1, p))} />
+  </>
         )
       )}
       <OrderDrawer order={selected} open={drawerOpen} onClose={() => setDrawerOpen(false)} />

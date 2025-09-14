@@ -14,9 +14,9 @@ export type Farmer = {
   longitude?: number
 }
 
-export async function getFarmers() {
-  const { data } = await api.get('/admin/farmers')
-  return data as { data: Farmer[] }
+export async function getFarmers(params?: { page?: number; limit?: number; search?: string; sort?: string }) {
+  const { data } = await api.get('/admin/farmers', { params })
+  return data as { data: Farmer[]; page?: number; limit?: number; total?: number; totalPages?: number }
 }
 
 export type UpsertFarmer = Partial<Omit<Farmer, '_id'>> & { password?: string }

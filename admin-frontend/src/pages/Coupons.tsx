@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Coupon, getCoupons, createCoupon, updateCoupon, deleteCoupon } from '@/api/couponsApi'
 import Pagination from '@/components/ui/Pagination'
@@ -9,7 +10,9 @@ export default function Coupons() {
   const [list, setList] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [limit] = useState(20)
+  const [limit, setLimit] = useState(10)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const PAGE_SIZE_KEY = 'pageSize:coupons'
   const [total, setTotal] = useState<number | undefined>(undefined)
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined)
   const [open, setOpen] = useState(false)
@@ -28,6 +31,14 @@ export default function Coupons() {
     } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [page, limit])
+
+  // Initialize limit from URL or localStorage
+  useEffect(() => {
+    const fromUrl = Number(searchParams.get('limit'))
+    if (Number.isFinite(fromUrl) && fromUrl > 0) { setLimit(fromUrl); return }
+    const fromLS = Number(localStorage.getItem(PAGE_SIZE_KEY) || '')
+    if (Number.isFinite(fromLS) && fromLS > 0) setLimit(fromLS)
+  }, [])
 
   const submit = async () => {
     // basic client-side validation to avoid backend 500s on invalid input
@@ -74,7 +85,30 @@ export default function Coupons() {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-2xl font-semibold">Coupons</h1>
-        <button className="px-3 py-2 rounded-md bg-green-600 text-white hover:bg-green-700" onClick={() => setOpen(true)}>Add Coupon</button>
+        <div className="flex items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <span>Per page</span>
+            <select
+              className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
+              value={limit}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                setLimit(val)
+                setPage(1)
+                localStorage.setItem(PAGE_SIZE_KEY, String(val))
+                const next = new URLSearchParams(searchParams)
+                next.set('limit', String(val))
+                next.set('page', '1')
+                setSearchParams(next, { replace: true })
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
+          <button className="px-3 py-2 rounded-md bg-green-600 text-white hover:bg-green-700" onClick={() => setOpen(true)}>Add Coupon</button>
+        </div>
       </div>
 
       {loading ? <div className="text-sm text-gray-500">Loading...</div> : list.length === 0 ? (

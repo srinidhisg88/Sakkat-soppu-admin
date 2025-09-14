@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import dayjs from 'dayjs'
 import { getOrders, updateOrderStatus, Order } from '@/api/ordersApi'
@@ -21,7 +22,9 @@ export default function Orders() {
   const [selected, setSelected] = useState<Order | undefined>(undefined)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const [limit] = useState(20)
+  const [limit, setLimit] = useState(10)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const PAGE_SIZE_KEY = 'pageSize:orders'
   const [total, setTotal] = useState<number | undefined>(undefined)
 
   const fetchOrders = async (f?: OrderFiltersState) => {
@@ -49,6 +52,14 @@ export default function Orders() {
     fetchOrders(filters)
   }, [page, limit])
 
+  // Initialize limit from URL or localStorage
+  useEffect(() => {
+    const fromUrl = Number(searchParams.get('limit'))
+    if (Number.isFinite(fromUrl) && fromUrl > 0) { setLimit(fromUrl); return }
+    const fromLS = Number(localStorage.getItem(PAGE_SIZE_KEY) || '')
+    if (Number.isFinite(fromLS) && fromLS > 0) setLimit(fromLS)
+  }, [])
+
   const onChangeStatus = async (orderId: string, status: Order['status']) => {
     const prev = orders
     setOrders((os) => os.map((o) => (o._id === orderId ? { ...o, status } : o)))
@@ -67,7 +78,29 @@ export default function Orders() {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-2xl font-semibold">Orders</h1>
-        <button
+        <div className="flex items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <span>Per page</span>
+            <select
+              className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
+              value={limit}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                setLimit(val)
+                setPage(1)
+                localStorage.setItem(PAGE_SIZE_KEY, String(val))
+                const next = new URLSearchParams(searchParams)
+                next.set('limit', String(val))
+                next.set('page', '1')
+                setSearchParams(next, { replace: true })
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
+          <button
           className="px-3 py-2 rounded-md border hover:bg-gray-50"
           onClick={() => {
             const headers = ['User', 'Items', 'Total', 'Status', 'Created']
@@ -84,9 +117,10 @@ export default function Orders() {
             })
             downloadBlob(toCsv(headers, rows), `orders_${Date.now()}.csv`)
           }}
-        >
-          Export CSV
-        </button>
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <OrderFilters

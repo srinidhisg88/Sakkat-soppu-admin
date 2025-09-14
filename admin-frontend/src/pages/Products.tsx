@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
 import Pagination from '@/components/ui/Pagination'
@@ -13,7 +14,9 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [limit] = useState(20)
+  const [limit, setLimit] = useState(10)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const PAGE_SIZE_KEY = 'pageSize:products'
   const [total, setTotal] = useState<number | undefined>(undefined)
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined)
   const [openAdd, setOpenAdd] = useState(false)
@@ -43,6 +46,17 @@ export default function Products() {
   }
 
   useEffect(() => { load() }, [page, limit, showLow])
+
+  // Initialize limit from URL or localStorage
+  useEffect(() => {
+    const fromUrl = Number(searchParams.get('limit'))
+    if (Number.isFinite(fromUrl) && fromUrl > 0) {
+      setLimit(fromUrl)
+      return
+    }
+    const fromLS = Number(localStorage.getItem(PAGE_SIZE_KEY) || '')
+    if (Number.isFinite(fromLS) && fromLS > 0) setLimit(fromLS)
+  }, [])
 
   const onCreate = async (formData: FormData) => {
     setSubmitting(true)
@@ -89,6 +103,27 @@ export default function Products() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Products</h1>
         <div className="flex items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <span>Per page</span>
+            <select
+              className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
+              value={limit}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                setLimit(val)
+                setPage(1)
+                localStorage.setItem(PAGE_SIZE_KEY, String(val))
+                const next = new URLSearchParams(searchParams)
+                next.set('limit', String(val))
+                next.set('page', '1')
+                setSearchParams(next, { replace: true })
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
           <label className="inline-flex items-center gap-2 text-sm">
             <input type="checkbox" className="rounded border-gray-300 text-green-600 focus:ring-green-500" checked={showLow} onChange={(e) => setShowLow(e.target.checked)} />
             Show low stock (≤ {LOW_STOCK_THRESHOLD})

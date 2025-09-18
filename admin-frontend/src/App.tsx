@@ -8,6 +8,7 @@ import Dashboard from '@/pages/Dashboard'
 import Orders from '@/pages/Orders'
 import Products from '@/pages/Products'
 import Farmers from '@/pages/Farmers'
+import FarmerDetail from '@/pages/FarmerDetail'
 import Coupons from '@/pages/Coupons'
 import AuditLogs from '@/pages/AuditLogs'
 import Layout from '@/components/Layout'
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/products" element={<Products />} />
           <Route path="/farmers" element={<Farmers />} />
+          <Route path="/farmers/:id" element={<FarmerDetail />} />
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/delivery-settings" element={<DeliverySettingsPage />} />

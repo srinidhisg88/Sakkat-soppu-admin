@@ -229,12 +229,12 @@ export default function Products() {
             initial={{
               name: editProduct.name,
               categoryId: (editProduct as any).categoryId || '',
-              price: editProduct.price,
-              stock: editProduct.stock,
+              price: editProduct.price != null ? String(editProduct.price) : '',
+              stock: editProduct.stock != null ? String(editProduct.stock) : '',
               description: editProduct.description,
               isOrganic: editProduct.isOrganic,
-              g: (editProduct as any).g,
-              pieces: (editProduct as any).pieces,
+              g: (editProduct as any).g != null ? String((editProduct as any).g) : '',
+              pieces: (editProduct as any).pieces != null ? String((editProduct as any).pieces) : '',
             }}
     initialExistingImages={editProduct.images || []}
     initialExistingVideos={editProduct.videos || []}

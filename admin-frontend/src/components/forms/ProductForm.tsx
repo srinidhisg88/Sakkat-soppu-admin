@@ -4,15 +4,15 @@ import { getPublicCategories, type Category } from '@/api/categoriesApi'
 export type ProductFormValues = {
   name: string;
   categoryId: string;
-  price: number;
-  stock: number;
+  price: string; // keep as string to allow empty and avoid scroll increments
+  stock: string; // keep as string to allow empty
   description: string;
   isOrganic?: boolean;
   images: File[]; // at least one image required for imageUrl
   videos?: File[];
   unitType?: 'none' | 'grams' | 'pieces';
-  g?: number;
-  pieces?: number;
+  g?: string; // string to allow empty
+  pieces?: string; // string to allow empty
 };
 
 type Props = {
@@ -30,15 +30,15 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
   const [values, setValues] = useState<ProductFormValues>({
     name: initial?.name || '',
     categoryId: (initial as any)?.categoryId || '',
-    price: initial?.price || 0,
-    stock: initial?.stock || 0,
+    price: initial?.price != null ? String(initial.price) : '',
+    stock: initial?.stock != null ? String(initial.stock) : '',
     description: initial?.description || '',
     isOrganic: initial?.isOrganic || false,
     images: [],
     videos: [],
   unitType: initial && (initial as any).g ? 'grams' : initial && (initial as any).pieces ? 'pieces' : 'none',
-  g: (initial as any)?.g || 0,
-  pieces: (initial as any)?.pieces || 0,
+  g: (initial as any)?.g != null ? String((initial as any).g) : '',
+  pieces: (initial as any)?.pieces != null ? String((initial as any).pieces) : '',
   });
 
   // Existing media (URLs) and removal tracking (for edit mode)
@@ -88,18 +88,19 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
     const formData = new FormData();
     formData.append('name', values.name);
   formData.append('categoryId', values.categoryId);
-    formData.append('price', values.price.toString());
-    formData.append('stock', values.stock.toString());
+  // send as strings; backend will parse numbers; allows empty while editing before submit validation
+  formData.append('price', values.price);
+  formData.append('stock', values.stock);
     formData.append('description', values.description);
     formData.append('isOrganic', values.isOrganic ? 'true' : 'false');
 
     // Unit fields: prefer only one of g or pieces; treat 0/empty as unset
-    const g = Number(values.g || 0);
-    const pcs = Number(values.pieces || 0);
-    if (values.unitType === 'grams' && g > 0) {
-      formData.append('g', String(g));
-    } else if (values.unitType === 'pieces' && pcs > 0) {
-      formData.append('pieces', String(pcs));
+    const g = (values.g || '').trim();
+    const pcs = (values.pieces || '').trim();
+    if (values.unitType === 'grams' && g !== '') {
+      formData.append('g', g);
+    } else if (values.unitType === 'pieces' && pcs !== '') {
+      formData.append('pieces', pcs);
     }
 
   // images (append all under `images` for multer array)
@@ -235,9 +236,9 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
             step="0.01"
             className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
             value={values.price}
-            onChange={(e) =>
-              setValues({ ...values, price: parseFloat(e.target.value) })
-            }
+            onChange={(e) => setValues({ ...values, price: e.target.value })}
+            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+            onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault() }}
             required
           />
         </div>
@@ -248,9 +249,9 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
             type="number"
             className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
             value={values.stock}
-            onChange={(e) =>
-              setValues({ ...values, stock: parseInt(e.target.value || '0') })
-            }
+            onChange={(e) => setValues({ ...values, stock: e.target.value })}
+            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+            onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault() }}
             required
           />
         </div>
@@ -304,8 +305,10 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
             <div>
               <label className="block text-sm mb-1">Grams (g)</label>
               <input type="number" min={0} className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
-                value={values.g || 0}
-                onChange={(e) => setValues({ ...values, g: Number(e.target.value || 0) })}
+                value={values.g ?? ''}
+                onChange={(e) => setValues({ ...values, g: e.target.value })}
+                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault() }}
               />
             </div>
           )}
@@ -313,8 +316,10 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
             <div>
               <label className="block text-sm mb-1">Pieces</label>
               <input type="number" min={0} className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
-                value={values.pieces || 0}
-                onChange={(e) => setValues({ ...values, pieces: Number(e.target.value || 0) })}
+                value={values.pieces ?? ''}
+                onChange={(e) => setValues({ ...values, pieces: e.target.value })}
+                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault() }}
               />
             </div>
           )}

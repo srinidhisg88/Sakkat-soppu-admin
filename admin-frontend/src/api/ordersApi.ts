@@ -15,6 +15,7 @@ export type OrderItem = {
 export type Order = {
   _id: string
   userId: { _id: string; name?: string; username?: string; email?: string; phone?: string } | string
+  customerPhone?: string
   items: OrderItem[]
   // totals
   subtotalPrice?: number

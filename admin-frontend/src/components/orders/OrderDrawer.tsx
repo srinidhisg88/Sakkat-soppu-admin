@@ -10,6 +10,8 @@ export default function OrderDrawer({ order, open, onClose }: { order?: Order; o
   useEffect(() => {
     let active = true
     async function load() {
+      // Immediately reflect the newly selected order to avoid flashing the previous one
+      setFull(order)
       if (open && order?._id) {
         try {
           const data = await getOrderById(order._id)
@@ -18,6 +20,7 @@ export default function OrderDrawer({ order, open, onClose }: { order?: Order; o
           if (active) setFull(order)
         }
       } else {
+        // When closed, mirror the prop (likely undefined)
         setFull(order)
       }
     }
@@ -45,6 +48,9 @@ export default function OrderDrawer({ order, open, onClose }: { order?: Order; o
               <div>
                 <div className="text-sm text-gray-500">Customer</div>
                 <div className="font-medium">{typeof full.userId === 'string' ? '' : (full as any).userId?.name || (full as any).userId?.username || (full as any).userId?.email}</div>
+                <div className="text-sm text-gray-600">
+                  {(full as any).customerPhone || (typeof full.userId === 'string' ? '' : (full as any).userId?.phone) || ''}
+                </div>
               </div>
               <StatusBadge status={full.status} />
             </div>

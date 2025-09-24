@@ -10,9 +10,10 @@ export type ProductFormValues = {
   isOrganic?: boolean;
   images: File[]; // at least one image required for imageUrl
   videos?: File[];
-  unitType?: 'none' | 'grams' | 'pieces';
+  unitType?: 'none' | 'grams' | 'pieces' | 'litre';
   g?: string; // string to allow empty
   pieces?: string; // string to allow empty
+  litre?: string; // string to allow empty
 };
 
 type Props = {
@@ -36,9 +37,10 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
     isOrganic: initial?.isOrganic || false,
     images: [],
     videos: [],
-  unitType: initial && (initial as any).g ? 'grams' : initial && (initial as any).pieces ? 'pieces' : 'none',
+  unitType: initial && (initial as any).g ? 'grams' : initial && (initial as any).pieces ? 'pieces' : initial && (initial as any).litre ? 'litre' : 'none',
   g: (initial as any)?.g != null ? String((initial as any).g) : '',
   pieces: (initial as any)?.pieces != null ? String((initial as any).pieces) : '',
+  litre: (initial as any)?.litre != null ? String((initial as any).litre) : '',
   });
 
   // Existing media (URLs) and removal tracking (for edit mode)
@@ -94,13 +96,16 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
     formData.append('description', values.description);
     formData.append('isOrganic', values.isOrganic ? 'true' : 'false');
 
-    // Unit fields: prefer only one of g or pieces; treat 0/empty as unset
+    // Unit fields: prefer only one of g, pieces, or litre; treat 0/empty as unset
     const g = (values.g || '').trim();
     const pcs = (values.pieces || '').trim();
+    const ltr = (values.litre || '').trim();
     if (values.unitType === 'grams' && g !== '') {
       formData.append('g', g);
     } else if (values.unitType === 'pieces' && pcs !== '') {
       formData.append('pieces', pcs);
+    } else if (values.unitType === 'litre' && ltr !== '') {
+      formData.append('litre', ltr);
     }
 
   // images (append all under `images` for multer array)
@@ -298,6 +303,10 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
               <input type="radio" name="unitType" checked={values.unitType === 'pieces'} onChange={() => setValues({ ...values, unitType: 'pieces' })} />
               Pieces (pcs)
             </label>
+            <label className="inline-flex items-center gap-1">
+              <input type="radio" name="unitType" checked={values.unitType === 'litre'} onChange={() => setValues({ ...values, unitType: 'litre' })} />
+              Litre
+            </label>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -318,6 +327,17 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
               <input type="number" min={0} className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
                 value={values.pieces ?? ''}
                 onChange={(e) => setValues({ ...values, pieces: e.target.value })}
+                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault() }}
+              />
+            </div>
+          )}
+          {values.unitType === 'litre' && (
+            <div>
+              <label className="block text-sm mb-1">Litre</label>
+              <input type="number" min={0} step="0.01" className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
+                value={values.litre ?? ''}
+                onChange={(e) => setValues({ ...values, litre: e.target.value })}
                 onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault() }}
               />

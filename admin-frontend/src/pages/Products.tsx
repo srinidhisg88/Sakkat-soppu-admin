@@ -235,6 +235,7 @@ export default function Products() {
               isOrganic: editProduct.isOrganic,
               g: (editProduct as any).g != null ? String((editProduct as any).g) : '',
               pieces: (editProduct as any).pieces != null ? String((editProduct as any).pieces) : '',
+              litre: (editProduct as any).litre != null ? String((editProduct as any).litre) : '',
             }}
     initialExistingImages={editProduct.images || []}
     initialExistingVideos={editProduct.videos || []}

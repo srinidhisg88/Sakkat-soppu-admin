@@ -16,6 +16,7 @@ export type Product = {
   // unit fields
   g?: number
   pieces?: number
+  litre?: number
   // computed virtuals from backend
   unitLabel?: string | null
   priceForUnitLabel?: string | null
@@ -50,6 +51,7 @@ export type CreateProductInput = {
   videos?: File[]
   g?: number
   pieces?: number
+  litre?: number
 }
 
 export async function createProduct(input: CreateProductInput | FormData) {
@@ -61,11 +63,13 @@ export async function createProduct(input: CreateProductInput | FormData) {
     f.append('stock', String(input.stock))
   if (input.description) f.append('description', input.description)
   if (typeof input.isOrganic === 'boolean') f.append('isOrganic', String(input.isOrganic))
-  // Prefer only one of g or pieces
+    // Prefer only one of g, pieces, or litre
   const gVal = typeof input.g === 'number' ? input.g : undefined
   const pVal = typeof input.pieces === 'number' ? input.pieces : undefined
-  if ((gVal ?? 0) > 0 && !(pVal && pVal > 0)) f.append('g', String(gVal))
-  if ((pVal ?? 0) > 0 && !(gVal && gVal > 0)) f.append('pieces', String(pVal))
+  const lVal = typeof input.litre === 'number' ? input.litre : undefined
+  if ((gVal ?? 0) > 0 && !(pVal && pVal > 0) && !(lVal && lVal > 0)) f.append('g', String(gVal))
+  if ((pVal ?? 0) > 0 && !(gVal && gVal > 0) && !(lVal && lVal > 0)) f.append('pieces', String(pVal))
+  if ((lVal ?? 0) > 0 && !(gVal && gVal > 0) && !(pVal && pVal > 0)) f.append('litre', String(lVal))
   input.images?.forEach((file) => f.append('images', file))
   input.videos?.forEach((file) => f.append('videos', file))
     return f
@@ -87,16 +91,24 @@ export async function updateProduct(id: string, input: UpdateProductInput | Form
         f.append(k, typeof v === 'boolean' ? String(v) : String(v))
       }
     })
-    // If both g and pieces are present, prefer the one > 0; drop the other
+    // Prefer only one of g, pieces, or litre
     const g = (input as any).g
     const pieces = (input as any).pieces
-    if (typeof g === 'number' && g > 0 && !(typeof pieces === 'number' && pieces > 0)) {
+    const litre = (input as any).litre
+    if ((g ?? 0) > 0 && !(pieces && pieces > 0) && !(litre && litre > 0)) {
       f.set('g', String(g))
       f.delete('pieces')
+      f.delete('litre')
     }
-    if (typeof pieces === 'number' && pieces > 0 && !(typeof g === 'number' && g > 0)) {
+    if ((pieces ?? 0) > 0 && !(g && g > 0) && !(litre && litre > 0)) {
       f.set('pieces', String(pieces))
       f.delete('g')
+      f.delete('litre')
+    }
+    if ((litre ?? 0) > 0 && !(g && g > 0) && !(pieces && pieces > 0)) {
+      f.set('litre', String(litre))
+      f.delete('g')
+      f.delete('pieces')
     }
     return f
   })()

@@ -16,6 +16,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Categories from '@/pages/Categories'
 import DeliverySettingsPage from '@/pages/DeliverySettings'
+import HomepageVideos from '@/pages/HomepageVideos'
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/delivery-settings" element={<DeliverySettingsPage />} />
+          <Route path="/homepage-videos" element={<HomepageVideos />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

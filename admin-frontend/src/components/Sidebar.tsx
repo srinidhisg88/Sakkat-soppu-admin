@@ -27,6 +27,7 @@ export default function Sidebar() {
   <NavLink to="/coupons" className={linkClasses}>Coupons</NavLink>
   <NavLink to="/audit-logs" className={linkClasses}>Audit Logs</NavLink>
   <NavLink to="/delivery-settings" className={linkClasses}>Delivery Settings</NavLink>
+  <NavLink to="/homepage-videos" className={linkClasses}>Homepage Videos</NavLink>
       </nav>
       <button onClick={doLogout} className="mt-8 w-full px-4 py-2 border rounded hover:bg-gray-100">Logout</button>
     </aside>

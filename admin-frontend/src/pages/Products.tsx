@@ -12,6 +12,7 @@ import { getProducts, createProduct, updateProduct, deleteProduct, Product } fro
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -24,8 +25,31 @@ export default function Products() {
   const [submitting, setSubmitting] = useState(false)
   const [showLow, setShowLow] = useState(false)
   const [viewMediaOf, setViewMediaOf] = useState<Product | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const LOW_STOCK_THRESHOLD = 10
-  const filtered = products
+
+  // Frontend filtering across all products
+  const filtered = useMemo(() => {
+    const sourceProducts = searchQuery.trim() ? allProducts : products
+    if (!searchQuery.trim()) return sourceProducts
+    const query = searchQuery.toLowerCase().trim()
+    return sourceProducts.filter((p) =>
+      p.name.toLowerCase().includes(query)
+    )
+  }, [products, allProducts, searchQuery])
+
+  const loadAllProducts = async () => {
+    try {
+      const res = await getProducts({
+        page: 1,
+        limit: 10000, // Large limit to get all products
+        ...(showLow ? { lowStock: true, threshold: LOW_STOCK_THRESHOLD } : {}),
+      })
+      setAllProducts(res.data)
+    } catch (err: any) {
+      console.error('Failed to load all products for search:', err)
+    }
+  }
 
   const load = async () => {
     setLoading(true)
@@ -44,6 +68,11 @@ export default function Products() {
       setLoading(false)
     }
   }
+
+  // Load all products once on mount for search
+  useEffect(() => {
+    loadAllProducts()
+  }, [showLow])
 
   useEffect(() => { load() }, [page, limit, showLow])
 
@@ -64,7 +93,7 @@ export default function Products() {
     await createProduct(formData)
       toast.success('Product created')
       setOpenAdd(false)
-      await load()
+      await Promise.all([load(), loadAllProducts()])
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Create failed')
     } finally {
@@ -79,7 +108,7 @@ export default function Products() {
     await updateProduct(editProduct._id, formData)
       toast.success('Product updated')
       setEditProduct(null)
-      await load()
+      await Promise.all([load(), loadAllProducts()])
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Update failed')
     } finally {
@@ -93,6 +122,7 @@ export default function Products() {
       await deleteProduct(p._id)
       toast.success('Deleted')
       setProducts((ps) => ps.filter((x) => x._id !== p._id))
+      setAllProducts((ps) => ps.filter((x) => x._id !== p._id))
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Delete failed')
     }
@@ -103,6 +133,13 @@ export default function Products() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Products</h1>
         <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <label className="inline-flex items-center gap-2 text-sm">
             <span>Per page</span>
             <select

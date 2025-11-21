@@ -12,7 +12,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
 
-const MAX_FILE_SIZE = 500 * 1024 * 1024 // 100MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
 
 function VideoForm({
   onSubmit,
@@ -73,7 +73,7 @@ function VideoForm({
       <div>
         <label className="block text-sm mb-1">
           Video File {!initial && <span className="text-red-500">*</span>}
-          <span className="text-gray-500 text-xs ml-2">(Max 100MB)</span>
+          <span className="text-gray-500 text-xs ml-2">(Max 500MB)</span>
         </label>
         <input
           type="file"
@@ -83,7 +83,7 @@ function VideoForm({
             const file = e.target.files?.[0]
             if (file) {
               if (file.size > MAX_FILE_SIZE) {
-                toast.error('Video file is too large. Maximum size is 100MB')
+                toast.error('Video file is too large. Maximum size is 500MB')
                 e.target.value = ''
                 return
               }

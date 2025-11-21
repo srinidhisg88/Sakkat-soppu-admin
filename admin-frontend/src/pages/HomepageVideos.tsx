@@ -12,7 +12,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024 // 100MB
 
 function VideoForm({
   onSubmit,
@@ -40,7 +40,7 @@ function VideoForm({
 
     // Validate file size if uploading
     if (values.video && values.video.size > MAX_FILE_SIZE) {
-      toast.error('Video file is too large. Maximum size is 100MB')
+      toast.error('Video file is too large. Maximum size is 500MB')
       return
     }
 

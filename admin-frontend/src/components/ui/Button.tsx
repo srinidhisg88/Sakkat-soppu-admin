@@ -26,11 +26,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const isLoading = loading || (requestId && progress[requestId] !== undefined && progress[requestId] < 100)
     const showBar = showProgress && isLoading && localProgress > 0
+    const isDisabled = Boolean(disabled) || isLoading
 
     return (
       <button
         ref={ref}
-        disabled={disabled || isLoading}
+        disabled={isDisabled}
         className={clsx(
           'relative px-4 py-2 rounded font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden',
           variant === 'primary' && 'bg-green-600 text-white hover:bg-green-700',

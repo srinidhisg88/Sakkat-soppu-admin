@@ -2,15 +2,17 @@ import { clsx } from 'clsx'
 import { type ButtonHTMLAttributes, forwardRef, useState, useEffect } from 'react'
 import { useUploadProgress } from '@/context/UploadProgressContext'
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> {
   variant?: 'primary' | 'ghost' | 'danger'
   loading?: boolean
   requestId?: string // Optional: track specific request
   showProgress?: boolean // Show progress bar (default: true)
+  disabled?: boolean // Override to ensure only boolean
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', loading, requestId, showProgress = true, className, children, disabled, ...props }, ref) => {
+  (props, ref) => {
+    const { variant = 'primary', loading, requestId, showProgress = true, className, children, disabled, ...restProps } = props
     const { progress } = useUploadProgress()
     const [localProgress, setLocalProgress] = useState(0)
 
@@ -26,12 +28,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const isLoading = loading || (requestId && progress[requestId] !== undefined && progress[requestId] < 100)
     const showBar = showProgress && isLoading && localProgress > 0
-    const isDisabled = Boolean(disabled) || isLoading
+    const isDisabled = !!disabled || isLoading
 
     return (
       <button
         ref={ref}
-        disabled={isDisabled}
+        {...restProps}
+        disabled={isDisabled ? true : undefined}
         className={clsx(
           'relative px-4 py-2 rounded font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden',
           variant === 'primary' && 'bg-green-600 text-white hover:bg-green-700',
@@ -39,7 +42,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
           className,
         )}
-        {...props}
       >
         {/* Progress bar background */}
         {showBar && (

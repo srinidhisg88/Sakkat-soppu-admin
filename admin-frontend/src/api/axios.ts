@@ -22,6 +22,10 @@ if (import.meta.env.DEV) {
 export const api = axios.create({
   baseURL,
   withCredentials: true,
+  // Allow large file uploads (500MB)
+  maxContentLength: 500 * 1024 * 1024, // 500MB
+  maxBodyLength: 500 * 1024 * 1024, // 500MB
+  timeout: 300000, // 5 minutes timeout for large uploads
 })
 
 // Upload progress tracking types

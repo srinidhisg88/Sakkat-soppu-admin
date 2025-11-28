@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getPublicCategories, type Category } from '@/api/categoriesApi'
+import Button from '@/components/ui/Button'
 
 export type ProductFormValues = {
   name: string;
@@ -20,12 +21,13 @@ type Props = {
   initial?: Partial<ProductFormValues>;
   onSubmit: (formData: FormData) => void;
   submitting?: boolean;
+  requestId?: string;
   // existing media for edit mode (URLs)
   initialExistingImages?: string[];
   initialExistingVideos?: string[];
 };
 
-export default function ProductForm({ initial, onSubmit, submitting, initialExistingImages = [], initialExistingVideos = [] }: Props) {
+export default function ProductForm({ initial, onSubmit, submitting, requestId, initialExistingImages = [], initialExistingVideos = [] }: Props) {
   const [categories, setCategories] = useState<Category[]>([])
   const [catLoading, setCatLoading] = useState(true)
   const [values, setValues] = useState<ProductFormValues>({
@@ -544,13 +546,13 @@ export default function ProductForm({ initial, onSubmit, submitting, initialExis
       </div>
 
   <div className="flex justify-end gap-2 pt-2">
-        <button
+        <Button
           type="submit"
-          className="px-4 py-2 rounded-md bg-green-600 text-white disabled:opacity-60 hover:bg-green-700 active:bg-green-800 transition-colors"
-          disabled={submitting}
+          requestId={requestId}
+          loading={submitting}
         >
           Save
-        </button>
+        </Button>
       </div>
     </form>
   );

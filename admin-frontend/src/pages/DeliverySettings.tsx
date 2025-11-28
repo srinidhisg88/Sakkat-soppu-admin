@@ -5,15 +5,19 @@ import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/Table'
 import Modal from '@/components/ui/Modal'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
+import Button from '@/components/ui/Button'
+import { useUploadProgress } from '@/context/UploadProgressContext'
 
 export default function DeliverySettings() {
   const [settings, setSettings] = useState<DeliverySettingsType | null>(null)
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
   const [editCity, setEditCity] = useState<CityDeliverySettings | null>(null)
   const [isNewCity, setIsNewCity] = useState(false)
   const [globalEnabled, setGlobalEnabled] = useState(true)
   const [globalMinSubtotal, setGlobalMinSubtotal] = useState('')
+  const { generateRequestId } = useUploadProgress()
+  const [globalRequestId, setGlobalRequestId] = useState<string | undefined>()
+  const [cityRequestId, setCityRequestId] = useState<string | undefined>()
 
   const load = async () => {
     setLoading(true)
@@ -34,7 +38,8 @@ export default function DeliverySettings() {
   }, [])
 
   const onUpdateGlobal = async () => {
-    setSubmitting(true)
+    const reqId = generateRequestId()
+    setGlobalRequestId(reqId)
     try {
       const updated = await updateDeliverySettings({
         enabled: globalEnabled,
@@ -45,12 +50,13 @@ export default function DeliverySettings() {
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Update failed')
     } finally {
-      setSubmitting(false)
+      setGlobalRequestId(undefined)
     }
   }
 
   const onSaveCity = async (cityData: CityDeliverySettings) => {
-    setSubmitting(true)
+    const reqId = generateRequestId()
+    setCityRequestId(reqId)
     try {
       const updated = await updateCitySettings(cityData.name, {
         basePrice: cityData.basePrice,
@@ -64,7 +70,7 @@ export default function DeliverySettings() {
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Save failed')
     } finally {
-      setSubmitting(false)
+      setCityRequestId(undefined)
     }
   }
 
@@ -122,13 +128,12 @@ export default function DeliverySettings() {
                 />
               </div>
 
-              <button
+              <Button
                 onClick={onUpdateGlobal}
-                disabled={submitting}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                requestId={globalRequestId}
               >
-                {submitting ? 'Saving...' : 'Save Global Settings'}
-              </button>
+                Save Global Settings
+              </Button>
             </div>
           </div>
 
@@ -136,7 +141,7 @@ export default function DeliverySettings() {
           <div className="bg-white border rounded shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">City Delivery Settings</h2>
-              <button
+              <Button
                 onClick={() => {
                   setEditCity({
                     name: '',
@@ -146,10 +151,10 @@ export default function DeliverySettings() {
                   })
                   setIsNewCity(true)
                 }}
-                className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="px-3 py-2"
               >
                 Add City
-              </button>
+              </Button>
             </div>
 
             {!settings?.cities || settings.cities.length === 0 ? (
@@ -157,7 +162,7 @@ export default function DeliverySettings() {
                 title="No cities configured"
                 message="Add your first city to start configuring delivery pricing."
                 action={
-                  <button
+                  <Button
                     onClick={() => {
                       setEditCity({
                         name: '',
@@ -167,10 +172,9 @@ export default function DeliverySettings() {
                       })
                       setIsNewCity(true)
                     }}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                   >
                     Add City
-                  </button>
+                  </Button>
                 }
               />
             ) : (
@@ -233,7 +237,7 @@ export default function DeliverySettings() {
             initial={editCity}
             isNewCity={isNewCity}
             onSubmit={onSaveCity}
-            submitting={submitting}
+            requestId={cityRequestId}
           />
         )}
       </Modal>
@@ -245,12 +249,12 @@ function CityForm({
   initial,
   isNewCity,
   onSubmit,
-  submitting,
+  requestId,
 }: {
   initial: CityDeliverySettings
   isNewCity: boolean
   onSubmit: (data: CityDeliverySettings) => void
-  submitting: boolean
+  requestId?: string
 }) {
   const [name, setName] = useState(initial.name)
   const [basePrice, setBasePrice] = useState(String(initial.basePrice || ''))
@@ -353,13 +357,12 @@ function CityForm({
       </div>
 
       <div className="flex gap-2 justify-end pt-4">
-        <button
+        <Button
           type="submit"
-          disabled={submitting}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          requestId={requestId}
         >
-          {submitting ? 'Saving...' : isNewCity ? 'Add City' : 'Update City'}
-        </button>
+          {isNewCity ? 'Add City' : 'Update City'}
+        </Button>
       </div>
     </form>
   )

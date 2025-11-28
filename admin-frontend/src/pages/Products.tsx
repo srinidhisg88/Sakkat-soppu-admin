@@ -9,6 +9,7 @@ import ProductForm from '@/components/forms/ProductForm'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
 import { getProducts, createProduct, updateProduct, deleteProduct, Product } from '@/api/productsApi'
+import { useUploadProgress } from '@/context/UploadProgressContext'
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
@@ -27,6 +28,9 @@ export default function Products() {
   const [viewMediaOf, setViewMediaOf] = useState<Product | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const LOW_STOCK_THRESHOLD = 10
+  const { generateRequestId } = useUploadProgress()
+  const [createRequestId, setCreateRequestId] = useState<string | undefined>()
+  const [updateRequestId, setUpdateRequestId] = useState<string | undefined>()
 
   // Frontend filtering across all products
   const filtered = useMemo(() => {
@@ -88,6 +92,8 @@ export default function Products() {
   }, [])
 
   const onCreate = async (formData: FormData) => {
+    const reqId = generateRequestId()
+    setCreateRequestId(reqId)
     setSubmitting(true)
     try {
     await createProduct(formData)
@@ -98,11 +104,14 @@ export default function Products() {
       toast.error(err?.response?.data?.message || 'Create failed')
     } finally {
       setSubmitting(false)
+      setCreateRequestId(undefined)
     }
   }
 
   const onUpdate = async (formData: FormData) => {
     if (!editProduct) return
+    const reqId = generateRequestId()
+    setUpdateRequestId(reqId)
     setSubmitting(true)
     try {
     await updateProduct(editProduct._id, formData)
@@ -113,6 +122,7 @@ export default function Products() {
       toast.error(err?.response?.data?.message || 'Update failed')
     } finally {
       setSubmitting(false)
+      setUpdateRequestId(undefined)
     }
   }
 
@@ -257,7 +267,7 @@ export default function Products() {
       )}
 
   <Modal open={openAdd} onClose={() => setOpenAdd(false)} title="Add Product" size="full">
-        <ProductForm onSubmit={onCreate} submitting={submitting} />
+        <ProductForm onSubmit={onCreate} submitting={submitting} requestId={createRequestId} />
       </Modal>
 
   <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title="Edit Product" size="full">
@@ -278,6 +288,7 @@ export default function Products() {
     initialExistingVideos={editProduct.videos || []}
             onSubmit={onUpdate}
             submitting={submitting}
+            requestId={updateRequestId}
           />
         )}
       </Modal>

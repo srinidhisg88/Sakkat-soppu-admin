@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { useEffect } from 'react'
 import Login from '@/pages/Login'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
@@ -13,20 +14,40 @@ import Coupons from '@/pages/Coupons'
 import AuditLogs from '@/pages/AuditLogs'
 import Layout from '@/components/Layout'
 import { AuthProvider } from '@/context/AuthContext'
+import { UploadProgressProvider, useUploadProgress } from '@/context/UploadProgressContext'
+import { setGlobalUploadCallbacks } from '@/api/axios'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Categories from '@/pages/Categories'
 import DeliverySettingsPage from '@/pages/DeliverySettings'
 import HomepageVideos from '@/pages/HomepageVideos'
 
-export default function App() {
+function AppContent() {
+  const { setProgress, removeProgress } = useUploadProgress()
+
+  useEffect(() => {
+    // Set up global axios callbacks for upload progress
+    setGlobalUploadCallbacks(
+      (requestId, percent) => {
+        setProgress(requestId, percent)
+      },
+      (requestId) => {
+        // Complete the progress to 100% then remove after a short delay
+        setProgress(requestId, 100)
+        setTimeout(() => {
+          removeProgress(requestId)
+        }, 500)
+      }
+    )
+  }, [setProgress, removeProgress])
+
   return (
-    <AuthProvider>
+    <>
       <Toaster position="top-right" />
       <Routes>
-  <Route path="/login" element={<Login />} />
-  <Route path="/forgot-password" element={<ForgotPassword />} />
-  <Route path="/reset-password" element={<ResetPassword />} />
-  <Route path="/admin-signup" element={<AdminSignup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/admin-signup" element={<AdminSignup />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -42,6 +63,16 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <UploadProgressProvider>
+        <AppContent />
+      </UploadProgressProvider>
     </AuthProvider>
   )
 }

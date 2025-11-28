@@ -11,6 +11,7 @@ import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
+import { useUploadProgress } from '@/context/UploadProgressContext'
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
 
@@ -18,10 +19,12 @@ function VideoForm({
   onSubmit,
   submitting,
   initial,
+  requestId,
 }: {
   onSubmit: (formData: FormData) => void
   submitting?: boolean
   initial?: HomepageVideo
+  requestId?: string
 }) {
   const [values, setValues] = useState({
     title: initial?.title || '',
@@ -115,7 +118,7 @@ function VideoForm({
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button type="submit" loading={submitting}>
+        <Button type="submit" loading={submitting} requestId={requestId}>
           {initial ? 'Update' : 'Upload'} Video
         </Button>
       </div>
@@ -171,6 +174,9 @@ export default function HomepageVideos() {
 
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const { generateRequestId } = useUploadProgress()
+  const [createRequestId, setCreateRequestId] = useState<string | undefined>()
+  const [updateRequestId, setUpdateRequestId] = useState<string | undefined>()
 
   const loadVideos = async () => {
     try {
@@ -191,6 +197,8 @@ export default function HomepageVideos() {
   }
 
   const onCreate = async (formData: FormData) => {
+    const reqId = generateRequestId()
+    setCreateRequestId(reqId)
     try {
       setSubmitting(true)
       await createHomepageVideo({
@@ -210,11 +218,14 @@ export default function HomepageVideos() {
       toast.error('Failed to upload video')
     } finally {
       setSubmitting(false)
+      setCreateRequestId(undefined)
     }
   }
 
   const onUpdate = async (formData: FormData) => {
     if (!editVideo) return
+    const reqId = generateRequestId()
+    setUpdateRequestId(reqId)
     try {
       setSubmitting(true)
       await updateHomepageVideo(editVideo._id, {
@@ -233,6 +244,7 @@ export default function HomepageVideos() {
       toast.error('Failed to update video')
     } finally {
       setSubmitting(false)
+      setUpdateRequestId(undefined)
     }
   }
 
@@ -386,7 +398,7 @@ export default function HomepageVideos() {
           <p className="text-gray-500 text-sm">
             Upload a video to be shown on the homepage. Videos should be high quality and showcase your best products or services.
           </p>
-          <VideoForm onSubmit={onCreate} submitting={submitting} />
+          <VideoForm onSubmit={onCreate} submitting={submitting} requestId={createRequestId} />
         </div>
       </Modal>
 
@@ -397,7 +409,7 @@ export default function HomepageVideos() {
         size="lg"
       >
         {editVideo && (
-          <VideoForm onSubmit={onUpdate} submitting={submitting} initial={editVideo} />
+          <VideoForm onSubmit={onUpdate} submitting={submitting} initial={editVideo} requestId={updateRequestId} />
         )}
       </Modal>
     </div>
